@@ -8,9 +8,11 @@ import com.amadeus.resources.FlightOfferSearch;
 import com.amadeus.resources.Location;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.eclipse.microprofile.faulttolerance.Retry;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Singleton
 public class FlightSearcher {
@@ -25,6 +27,9 @@ public class FlightSearcher {
         return this.findFlightsForATrip(departureCode, destinationCode, departureDate, returnDate);
     }
 
+    // WE PUT RETRIES BECAUSE TEST AMADEUS API ONLY LET YO UDO ONE REQUEST EVERY 100MS
+
+    @Retry(maxRetries = 2, delay = 400, delayUnit = ChronoUnit.MILLIS)
     protected String findAirportCode(String location) throws ResponseException {
         Location[] locations = amadeus.referenceData.locations.get(Params
                 .with("keyword", location)
@@ -33,6 +38,7 @@ public class FlightSearcher {
         return  locations[0].getIataCode();
     }
 
+    @Retry(maxRetries = 2, delay = 400, delayUnit = ChronoUnit.MILLIS)
     protected Trip findFlightsForATrip(String originCode, String destinationCode, LocalDate departureDate, LocalDate returnDate) throws ResponseException {
         FlightOfferSearch[] flightOffersSearches = amadeus.shopping.flightOffersSearch.get(
                 Params.with("originLocationCode", originCode)
